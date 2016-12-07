@@ -17,7 +17,14 @@ include_recipe 'azuredns::get_azure_token'
 azure_token = node['azure_rest_token']
 platform_name = nsPathParts[5]
 profile_name = 'trafficmanager-' + platform_name
-traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, subscription, azure_token)
-status_code = traffic_manager_processor.delete_profile
+delete_traffic_manager_action = azuretrafficmanager_traffic_manager 'Traffic Manager' do
+  resource_group_name resource_group_name
+  profile_name profile_name
+  subscription subscription
+  traffic_manager traffic_manager
+  azure_token azure_token
+  action :nothing
+end
+delete_traffic_manager_action.run_action(:delete)
 
 Chef::Log.info("Exiting Traffic Manager Delete with response status code: " + status_code.to_s)

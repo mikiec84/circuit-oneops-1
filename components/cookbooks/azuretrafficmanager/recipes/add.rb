@@ -27,6 +27,7 @@ def get_load_balancer(network_client, resource_group_name, load_balancer_name)
   begin
     promise = network_client.load_balancers.get(resource_group_name, load_balancer_name)
     load_balancer = promise.value!
+	puts "Load Balancer: #{load_balancer.inspect}"
     Chef::Log.info('Found load balancer ' + load_balancer_name)
   rescue MsRestAzure::AzureOperationError => e
     Chef::Log.warn('Load balancer not found')
@@ -80,6 +81,7 @@ end
 
 def initialize_monitor_config
   listeners = node.workorder.payLoad.lb[0][:ciAttributes][:listeners]
+	puts "Listeners: #{listeners}"
   protocol = listeners.tr('[]"', '').split(' ')[0].upcase
 
   monitor_port = listeners.tr('[]"', '').split(' ')[1]
@@ -105,6 +107,7 @@ def initialize_dns_config(dns_attributes, gdns_attributes)
   domain = dns_attributes['zone']
   domain_without_root = domain.split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.')
   subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
+	puts "subdomain: #{subdomain}"
   if !subdomain.empty?
     dns_name = subdomain + '.' + domain_without_root
   else
@@ -151,6 +154,7 @@ def get_resource_group_names()
 
   resource_group_names = Array.new
   remotegdns_list = node['workorder']['payLoad']['remotegdns']
+	puts "remotegdns_list: #{remotegdns_list}" 
   remotegdns_list.each do |remotegdns|
     location = remotegdns['ciAttributes']['location']
     resource_group_name = org[0..15] + '-' + assembly[0..15] + '-' + node.workorder.box.ciId.to_s + '-' + environment[0..15] + '-' + Utils.abbreviate_location(location)
@@ -177,7 +181,6 @@ end
 
 #set the proxy if it exists as a cloud var
 Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
-
 nsPathParts = node['workorder']['rfcCi']['nsPath'].split('/')
 cloud_name = node['workorder']['cloud']['ciName']
 dns_attributes = node['workorder']['services']['dns'][cloud_name]['ciAttributes']
@@ -191,7 +194,6 @@ network_client.subscription_id = subscription
 resource_group_names = get_resource_group_names()
 public_ip_fqdns = get_public_ip_fqdns(network_client, resource_group_names, nsPathParts)
 traffic_manager = initialize_traffic_manager(public_ip_fqdns, dns_attributes, gdns_attributes)
-
 include_recipe 'azuredns::get_azure_token'
 azure_token = node['azure_rest_token']
 platform_name = nsPathParts[5]
@@ -201,18 +203,42 @@ resource_group_name = get_traffic_manager_resource_group(resource_group_names, p
 if resource_group_name.nil? then
   include_recipe 'azure::get_platform_rg_and_as'
   resource_group_name = node['platform-resource-group']
-  traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, subscription, traffic_manager, azure_token)
-  status_code = traffic_manager_processor.create_update_profile
-  if ![200, 201].include? status_code
+create_traffic_manager_action = azuretrafficmanager_traffic_manager 'Traffic Manager' do
+  puts "Entering into lwrp"
+  resource_group_name resource_group_name
+  profile_name profile_name
+  subscription subscription
+  traffic_manager traffic_manager
+  azure_token azure_token  
+  action :nothing
+end
+create_traffic_manager_action.run_action(:create)
+
+  if ![200, 201].include? node['status_code']
     Chef::Log.error("Failed to create traffic manager.")
     exit 1
   end
 else
-  traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, subscription, traffic_manager, azure_token)
-  status_code = traffic_manager_processor.delete_profile
-  if [200, 204].include? status_code
-    status_code = traffic_manager_processor.create_update_profile
-    if ![200, 201].include? status_code
+delete_traffic_manager_action = azuretrafficmanager_traffic_manager 'Traffic Manager' do
+  resource_group_name resource_group_name
+  profile_name profile_name
+  subscription subscription
+  traffic_manager traffic_manager
+  azure_token azure_token  
+  action :nothing
+end
+delete_traffic_manager_action.run_action(:delete)
+  if [200, 204].include? node['status_code']
+create_traffic_manager_action = azuretrafficmanager_traffic_manager 'Traffic Manager' do
+  resource_group_name resource_group_name
+  profile_name profile_name
+  subscription subscription
+  traffic_manager traffic_manager
+  azure_token azure_token  
+  action :nothing
+end
+create_traffic_manager_action.run_action(:create)
+    if ![200, 201].include? node['status_code']
       Chef::Log.error("Failed to recreate traffic manager.")
       exit 1
     end
@@ -222,4 +248,4 @@ else
   end
 end
 
-Chef::Log.info("Exiting Traffic Manager Add with response status code: " + status_code.to_s)
+Chef::Log.info("Exiting Traffic Manager Add with response status code: " + node['status_code'].to_s)
