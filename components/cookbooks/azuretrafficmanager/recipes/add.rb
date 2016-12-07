@@ -27,7 +27,6 @@ def get_load_balancer(network_client, resource_group_name, load_balancer_name)
   begin
     promise = network_client.load_balancers.get(resource_group_name, load_balancer_name)
     load_balancer = promise.value!
-	puts "Load Balancer: #{load_balancer.inspect}"
     Chef::Log.info('Found load balancer ' + load_balancer_name)
   rescue MsRestAzure::AzureOperationError => e
     Chef::Log.warn('Load balancer not found')
@@ -81,7 +80,6 @@ end
 
 def initialize_monitor_config
   listeners = node.workorder.payLoad.lb[0][:ciAttributes][:listeners]
-	puts "Listeners: #{listeners}"
   protocol = listeners.tr('[]"', '').split(' ')[0].upcase
 
   monitor_port = listeners.tr('[]"', '').split(' ')[1]
@@ -107,7 +105,6 @@ def initialize_dns_config(dns_attributes, gdns_attributes)
   domain = dns_attributes['zone']
   domain_without_root = domain.split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.')
   subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
-	puts "subdomain: #{subdomain}"
   if !subdomain.empty?
     dns_name = subdomain + '.' + domain_without_root
   else
@@ -154,7 +151,6 @@ def get_resource_group_names()
 
   resource_group_names = Array.new
   remotegdns_list = node['workorder']['payLoad']['remotegdns']
-	puts "remotegdns_list: #{remotegdns_list}" 
   remotegdns_list.each do |remotegdns|
     location = remotegdns['ciAttributes']['location']
     resource_group_name = org[0..15] + '-' + assembly[0..15] + '-' + node.workorder.box.ciId.to_s + '-' + environment[0..15] + '-' + Utils.abbreviate_location(location)
@@ -204,7 +200,6 @@ if resource_group_name.nil? then
   include_recipe 'azure::get_platform_rg_and_as'
   resource_group_name = node['platform-resource-group']
 create_traffic_manager_action = azuretrafficmanager_traffic_manager 'Traffic Manager' do
-  puts "Entering into lwrp"
   resource_group_name resource_group_name
   profile_name profile_name
   subscription subscription
