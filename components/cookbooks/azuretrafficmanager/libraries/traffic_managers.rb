@@ -134,10 +134,10 @@ class TrafficManagers
 
   def get_public_ip_fqdns(dns_attributes, resource_group_names, ns_path_parts)
     cred_hash = {
-        tenant_id: dns_attributes['tenant_id'],
-        client_secret: dns_attributes['client_secret'],
-        client_id: dns_attributes['client_id'],
-        subscription_id: dns_attributes['subscription']
+      tenant_id: dns_attributes['tenant_id'],
+      client_secret: dns_attributes['client_secret'],
+      client_id: dns_attributes['client_id'],
+      subscription_id: dns_attributes['subscription']
     }
     platform_name = ns_path_parts[5]
     plat_name = platform_name.gsub(/-/, '').downcase

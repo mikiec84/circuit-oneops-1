@@ -9,16 +9,16 @@ require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
 require 'chef'
 
 def get_resource_group_names
-  ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
+  ns_path_parts = node[:workorder][:rfcCi][:nsPath].split('/')
   org = ns_path_parts[1]
   assembly = ns_path_parts[2]
   environment = ns_path_parts[3]
 
   resource_group_names = []
-  remotegdns_list = node['workorder']['payLoad']['remotegdns']
+  remotegdns_list = node[:workorder][:payLoad][:remotegdns]
   remotegdns_list.each do |remotegdns|
     location = remotegdns['ciAttributes']['location']
-    resource_group_name = org[0..15] + '-' + assembly[0..15] + '-' + node.workorder.box.ciId.to_s + '-' + environment[0..15] + '-' + Utils.abbreviate_location(location)
+    resource_group_name = org[0..15] + '-' + assembly[0..15] + '-' + node[:workorder][:box][:ciId].to_s + '-' + environment[0..15] + '-' + Utils.abbreviate_location(location)
     resource_group_names.push(resource_group_name)
   end
   Chef::Log.info('remotegdns resource groups: ' + resource_group_names.to_s)
@@ -36,20 +36,20 @@ def get_traffic_manager_resource_group(resource_group_names, profile_name, crede
 end
 
 # set the proxy if it exists as a cloud var
-Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
+Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
 
-ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
-cloud_name = node['workorder']['cloud']['ciName']
-dns_attributes = node['workorder']['services']['dns'][cloud_name]['ciAttributes']
-gdns_attributes = node['workorder']['services']['gdns'][cloud_name]['ciAttributes']
-listeners = node['workorder']['payLoad']['lb'][0][:ciAttributes][:listeners]
-subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
+ns_path_parts = node[:workorder][:rfcCi][:nsPath].split('/')
+cloud_name = node[:workorder][:cloud][:ciName]
+dns_attributes = node[:workorder][:services][:dns][cloud_name][:ciAttributes]
+gdns_attributes = node[:workorder][:services][:gdns][cloud_name][:ciAttributes]
+listeners = node[:workorder][:payLoad][:lb][0][:ciAttributes][:listeners]
+subdomain = node[:workorder][:payLoad][:Environment][0][:ciAttributes][:subdomain]
 
 credentials = {
-    tenant_id: dns_attributes['tenant_id'],
-    client_secret: dns_attributes['client_secret'],
-    client_id: dns_attributes['client_id'],
-    subscription_id: dns_attributes['subscription']
+  tenant_id: dns_attributes['tenant_id'],
+  client_secret: dns_attributes['client_secret'],
+  client_id: dns_attributes['client_id'],
+  subscription_id: dns_attributes['subscription']
 }
 
 begin
