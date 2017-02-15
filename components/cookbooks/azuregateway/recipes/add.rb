@@ -2,8 +2,6 @@ require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/virtual_network.rb', __FILE__)
 
-require 'azure_mgmt_network'
-require 'rest-client'
 require 'chef'
 require 'json'
 require 'base64'
@@ -16,12 +14,9 @@ require 'base64'
 # get platform resource group and availability set
 include_recipe 'azure::get_platform_rg_and_as'
 
-include_recipe 'azuredns::get_azure_token'
-token = node['azure_rest_token']
-
 def get_compute_nodes
   compute_nodes = []
-  compute_list = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Compute/ }
+  compute_list = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
   if compute_list
     # Build compute nodes to load balance
     compute_list.each do |compute|
@@ -34,7 +29,7 @@ end
 def create_public_ip(creds, location, resource_group_name)
   public_ip = AzureNetwork::PublicIp.new(creds)
   public_ip.location = location
-  public_ip_address = public_ip.build_public_ip_object(node['workorder']['rfcCi']['ciId'], 'ag_publicip')
+  public_ip_address = public_ip.build_public_ip_object(node[:workorder][:rfcCi][:ciId], 'ag_publicip')
   public_ip.create_update(resource_group_name, public_ip_address.name, public_ip_address)
 end
 
@@ -49,8 +44,8 @@ def get_vnet(resource_group_name, vnet_name, virtual_network)
 end
 
 def get_ag_service(cloud_name)
-  if !node.workorder.services['lb'].nil? && !node.workorder.services['lb'][cloud_name].nil?
-    ag_service = node.workorder.services['lb'][cloud_name]
+  if !node[:workorder][:services][:lb].nil? && !node[:workorder][:services][:lb][cloud_name].nil?
+    ag_service = node[:workorder][:services][:lb][cloud_name]
     return ag_service
   end
 
@@ -58,8 +53,8 @@ def get_ag_service(cloud_name)
 end
 
 def get_compute_service(cloud_name)
-  if !node.workorder.services['compute'].nil? && !node.workorder.services['compute'][cloud_name].nil?
-    compute_service = node.workorder.services['compute'][cloud_name]
+  if !node[:workorder][:services][:compute].nil? && !node[:workorder][:services][:compute][cloud_name].nil?
+    compute_service = node[:workorder][:services][:compute][cloud_name]
     return compute_service
   end
 
@@ -82,15 +77,15 @@ def cookie_enabled?(ag_service)
   enable_cookie
 end
 
-cloud_name = node.workorder.cloud.ciName
+cloud_name = node[:workorder][:cloud][:ciName]
 ag_service = get_ag_service(cloud_name)
 
 compute_service = get_compute_service(cloud_name)
 
-platform_name = node.workorder.box.ciName
-environment_name = node.workorder.payLoad.Environment[0]['ciName']
-assembly_name = node.workorder.payLoad.Assembly[0]['ciName']
-org_name = node.workorder.payLoad.Organization[0]['ciName']
+platform_name = node[:workorder][:box][:ciName]
+environment_name = node[:workorder][:payLoad][:Environment][0][:ciName]
+assembly_name = node[:workorder][:payLoad][:Assembly][0][:ciName]
+org_name = node[:workorder][:payLoad][:Organization][0][:ciName]
 security_group = "#{environment_name}.#{assembly_name}.#{org_name}"
 resource_group_name = node['platform-resource-group']
 subscription_id = ag_service[:ciAttributes]['subscription']
@@ -101,10 +96,10 @@ plat_name = platform_name.gsub(/-/, '').downcase
 env_name = environment_name.gsub(/-/, '').downcase
 ag_name = "ag-#{plat_name}"
 creds = {
-    tenant_id: ag_service[:ciAttributes][:tenant_id],
-    client_secret: ag_service[:ciAttributes][:client_secret],
-    client_id: ag_service[:ciAttributes][:client_id],
-    subscription_id: subscription_id
+  tenant_id: ag_service[:ciAttributes][:tenant_id],
+  client_secret: ag_service[:ciAttributes][:client_secret],
+  client_id: ag_service[:ciAttributes][:client_id],
+  subscription_id: subscription_id
 }
 tenant_id = ag_service[:ciAttributes][:tenant_id]
 client_id = ag_service[:ciAttributes][:client_id]
@@ -136,13 +131,10 @@ OOLog.info("Application Gateway: #{ag_name}")
 #   # 9 - Create Application Gateway
 
 begin
-  credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
   application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, creds)
 
   # Determine if express route is enabled
   express_route_enabled = express_route_enabled?(ag_service)
-
-  token = credentials.instance_variable_get(:@token_provider)
 
   virtual_network = AzureNetwork::VirtualNetwork.new(creds)
   public_ip = nil
@@ -151,9 +143,7 @@ begin
     master_rg = ag_service[:ciAttributes][:resource_group]
     vnet = get_vnet(master_rg, vnet_name, virtual_network)
 
-    if vnet.subnets.count < 1
-      OOLog.fatal("VNET '#{vnet_name}' does not have subnets")
-    end
+    OOLog.fatal("VNET '#{vnet_name}' does not have subnets") if vnet.subnets.count < 1
   else
     # Create public IP
     public_ip = create_public_ip(creds, location, resource_group_name)
@@ -187,7 +177,7 @@ begin
   data = ''
   password = ''
   ssl_certificate_exist = false
-  certs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Certificate/ }
+  certs = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Certificate/ }
   certs.each do |cert|
     next if cert[:ciAttributes][:pfx_enable].nil? || cert[:ciAttributes][:pfx_enable] == 'false'
     data = cert[:ciAttributes][:ssl_data]
@@ -206,7 +196,7 @@ begin
   end
 
   # Cookies must be enabled in case of SSL offload.
-  enable_cookie = ssl_certificate_exist == true ? true : enable_cookie
+  enable_cookie = ssl_certificate_exist ? true : enable_cookie
   application_gateway.set_https_settings(enable_cookie)
 
   # Gateway Front Port

@@ -7,20 +7,20 @@ require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 # get platform resource group and availability set
 include_recipe 'azure::get_platform_rg_and_as'
 
-cloud_name = node.workorder.cloud.ciName
+cloud_name = node[:workorder][:cloud][:ciName]
 ag_service = nil
-if !node.workorder.services['lb'].nil? && !node.workorder.services['lb'][cloud_name].nil?
-  ag_service = node.workorder.services['lb'][cloud_name]
+if !node[:workorder][:services][:lb].nil? && !node[:workorder][:services][:lb][cloud_name].nil?
+  ag_service = node[:workorder][:services][:lb][cloud_name]
 end
 
 if ag_service.nil?
   OOLog.fatal('missing application gateway service')
 end
 
-platform_name = node.workorder.box.ciName
-environment_name = node.workorder.payLoad.Environment[0]['ciName']
-assembly_name = node.workorder.payLoad.Assembly[0]['ciName']
-org_name = node.workorder.payLoad.Organization[0]['ciName']
+platform_name = node[:workorder][:box][:ciName]
+environment_name = node[:workorder][:payLoad][:Environment][0][:ciName]
+assembly_name = node[:workorder][:payLoad][:Assembly][0][:ciName]
+org_name = node[:workorder][:payLoad][:Organization][0][:ciName]
 security_group = "#{environment_name}.#{assembly_name}.#{org_name}"
 resource_group_name = node['platform-resource-group']
 subscription_id = ag_service[:ciAttributes]['subscription']
@@ -50,7 +50,7 @@ OOLog.info("Application Gateway: #{ag_name}")
 begin
   application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, cred_hash)
 
-  public_ip_name = Utils.get_component_name('ag_publicip', node.workorder.rfcCi.ciId)
+  public_ip_name = Utils.get_component_name('ag_publicip', node[:workorder][:rfcCi][:ciId])
 
   application_gateway.delete
   public_ip_obj = AzureNetwork::PublicIp.new(cred_hash)
