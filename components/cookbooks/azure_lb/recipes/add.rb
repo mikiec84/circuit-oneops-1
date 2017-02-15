@@ -9,15 +9,13 @@ include_recipe 'azure::get_platform_rg_and_as'
 def create_publicip(cred_hash, location, resource_group_name)
   pip_svc = AzureNetwork::PublicIp.new(cred_hash)
   pip_svc.location = location
-  public_ip_address = pip_svc.build_public_ip_object(node.workorder.rfcCi.ciId, 'lb_publicip')
-  pip = pip_svc.create_update(resource_group_name, public_ip_address.name, public_ip_address)
-  pip
+  public_ip_address = pip_svc.build_public_ip_object(node[:workorder][:rfcCi][:ciId], 'lb_publicip')
+  pip_svc.create_update(resource_group_name, public_ip_address.name, public_ip_address)
 end
 
 def get_probes_from_wo
-  ci = {}
-  ci = node.workorder.key?('rfcCi') ? node.workorder.rfcCi : node.workorder.ci
-  listeners = get_listeners()
+  ci = node[:workorder].key?('rfcCi') ? node[:workorder][:rfcCi] : node[:workorder][:ci]
+  listeners = get_listeners
 
   ecvs = []
   ecvs_raw = JSON.parse(ci[:ciAttributes][:ecv_map])
@@ -51,12 +49,12 @@ def get_probes_from_wo
       end
 
       ecvs.push(
-          probe_name: probe_name,
-          interval_secs: interval_secs,
-          num_probes: num_probes,
-          port: port,
-          protocol: protocol,
-          request_path: request_path
+        probe_name: probe_name,
+        interval_secs: interval_secs,
+        num_probes: num_probes,
+        port: port,
+        protocol: protocol,
+        request_path: request_path
       )
     end
   end
@@ -81,10 +79,10 @@ def get_probes
 end
 
 def get_listeners_from_wo
-  listeners = Array.new
+  listeners = []
 
-  if node["loadbalancers"]
-    raw_data = node['loadbalancers']
+  if node[:loadbalancers]
+    raw_data = node[:loadbalancers]
     raw_data.each do |listener|
       listeners.push(listener)
     end
@@ -94,8 +92,7 @@ def get_listeners_from_wo
 end
 
 def get_listeners
-  ci = {}
-  ci = node.workorder.key?('rfcCi') ? node.workorder.rfcCi : node.workorder.ci
+  ci = node[:workorder].key?('rfcCi') ? node[:workorder][:rfcCi] : node[:workorder][:ci]
 
   listeners = []
 
@@ -122,15 +119,7 @@ def get_listeners
         OOLog.info("Listener iprotocol: #{iproto}")
         OOLog.info("Listener iport: #{iport}")
 
-        listener = {
-            name: listen_name,
-            iport: iport,
-            vport: vport,
-            vprotocol: vproto,
-            iprotocol: iproto
-        }
-
-        listeners.push(listener)
+        listeners.push(name: listen_name, iport: iport, vport: vport, vprotocol: vproto, iprotocol: iproto)
       end
     end
     return listeners
@@ -142,10 +131,9 @@ end
 def get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_name, platform_name, probes, frontend_ipconfig_id, backend_address_pool_id)
   lb_rules = []
 
-  ci = {}
-  ci = node.workorder.key?('rfcCi') ? node.workorder.rfcCi : node.workorder.ci
+  ci = node[:workorder].key?('rfcCi') ? node[:workorder][:rfcCi] : node[:workorder][:ci]
 
-  listeners = get_listeners()
+  listeners = get_listeners
 
   listeners.each do |listener|
     lb_rule_name = "#{env_name}.#{platform_name}-#{listener[:vport]}_#{listener[:iport]}tcp-#{ci[:ciId]}-lbrule"
@@ -181,16 +169,16 @@ def get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_na
 end
 
 def get_dc_lb_names
-  platform_name = node.workorder.box.ciName
-  environment_name = node.workorder.payLoad.Environment[0]['ciName']
-  assembly_name = node.workorder.payLoad.Assembly[0]['ciName']
-  org_name = node.workorder.payLoad.Organization[0]['ciName']
+  platform_name = node[:workorder][:box][:ciName]
+  environment_name = node[:workorder][:payLoad][:Environment][0][:ciName]
+  assembly_name = node[:workorder][:payLoad][:Assembly][0][:ciName]
+  org_name = node[:workorder][:payLoad][:Organization][0][:ciName]
 
-  cloud_name = node.workorder.cloud.ciName
-  dc = node.workorder.services['lb'][cloud_name][:ciAttributes][:location] + '.'
-  dns_zone = node.workorder.services['dns'][cloud_name][:ciAttributes][:zone]
+  cloud_name = node[:workorder][:cloud][:ciName]
+  dc = node[:workorder][:services][:lb][cloud_name][:ciAttributes][:location] + '.'
+  dns_zone = node[:workorder][:services][:dns][cloud_name][:ciAttributes][:zone]
   dc_dns_zone = dc + dns_zone
-  platform_ciId = node.workorder.box.ciId.to_s
+  platform_ciId = node[:workorder][:box][:ciId].to_s
 
   vnames = {}
   listeners = get_listeners_from_wo
@@ -200,7 +188,7 @@ def get_dc_lb_names
     service_type = listener[:vprotocol]
     service_type = 'SSL' if service_type == 'HTTPS'
     dc_lb_name = [platform_name, environment_name, assembly_name, org_name, dc_dns_zone].join('.') +
-        '-' + service_type + '_' + frontend_port + 'tcp-' + platform_ciId + '-lb'
+                 '-' + service_type + '_' + frontend_port + 'tcp-' + platform_ciId + '-lb'
 
     vnames[dc_lb_name] = nil
   end
@@ -215,12 +203,12 @@ def get_compute_nodes_from_wo
     # Build computes nodes to load balance
     computes.each do |compute|
       compute_nodes.push(
-          ciId: compute[:ciId],
-          ipaddress: compute[:ciAttributes][:private_ip],
-          hostname: compute[:ciAttributes][:hostname],
-          instance_id: compute[:ciAttributes][:instance_id],
-          instance_name: compute[:ciAttributes][:instance_name],
-          allow_port: get_allow_rule_port(compute[:ciAttributes][:allow_rules])
+        ciId: compute[:ciId],
+        ipaddress: compute[:ciAttributes][:private_ip],
+        hostname: compute[:ciAttributes][:hostname],
+        instance_id: compute[:ciAttributes][:instance_id],
+        instance_name: compute[:ciAttributes][:instance_name],
+        allow_port: get_allow_rule_port(compute[:ciAttributes][:allow_rules])
       )
     end
   end
@@ -237,10 +225,8 @@ def get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
   if compute_nodes.count > 0
     port_increment = 10
     port_counter = 1
-    front_port = 0
     OOLog.info('Configuring NAT Rules ...')
     compute_nodes.each do |compute_node|
-      idle_min = 5
       nat_rule_name = "NatRule-#{compute_node[:ciId]}-#{compute_node[:allow_port]}tcp"
       front_port = (compute_node[:allow_port].to_i * port_increment) + port_counter
       frontend_port = front_port
@@ -255,15 +241,14 @@ def get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
       nat_rules.push(nat_rule)
 
       compute_natrules.push(
-          instance_id: compute_node[:instance_id],
-          instance_name: compute_node[:instance_name],
-          nat_rule: nat_rule
+        instance_id: compute_node[:instance_id],
+        instance_name: compute_node[:instance_name],
+        nat_rule: nat_rule
       )
       port_counter += 1
     end
 
     OOLog.info("Total NAT rules: #{nat_rules.count}")
-
   end
 
   nat_rules
@@ -284,10 +269,10 @@ end
 # ==============================================================
 # Variables
 
-cloud_name = node.workorder.cloud.ciName
+cloud_name = node[:workorder][:cloud][:ciName]
 
 lb_service = nil
-lb_service = node.workorder.services['lb'][cloud_name] unless node.workorder.services['lb'].nil?
+lb_service = node[:workorder][:services][:lb][cloud_name] unless node[:workorder][:services][:lb].nil?
 
 OOLog.fatal('Missing lb service! Cannot continue.') if lb_service.nil?
 
@@ -306,8 +291,8 @@ elsif lb_service[:ciAttributes][:express_route_enabled] == 'false'
   xpress_route_enabled = false
 end
 
-platform_name = node.workorder.box.ciName
-environment_name = node.workorder.payLoad.Environment[0]['ciName']
+platform_name = node[:workorder][:box][:ciName]
+environment_name = node[:workorder][:payLoad][:Environment][0][:ciName]
 resource_group_name = node['platform-resource-group']
 
 plat_name = platform_name.gsub(/-/, '').downcase
@@ -395,6 +380,7 @@ begin
   lb = lb_svc.create_update(load_balancer)
   OOLog.info("Load Balancer '#{lb_name}' created!")
 rescue
+  # ignored
 end
 
 if lb.nil?
