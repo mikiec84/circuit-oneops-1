@@ -30,49 +30,49 @@ def get_datadisk_params_from_node(node_obj)
   base_manager = AzureBase::AzureBaseManager.new(node_obj)
   @device_maps = nil
 
-  if node_obj['device_map'] != nil
-    @device_maps = node_obj['device_map'].split(' ')
-  elsif node_obj['workorder']['rfcCi']['ciAttributes'][:device_map] != nil
-    @device_maps = node_obj['workorder']['rfcCi']['ciAttributes'][:device_map].split(' ')
+  if !node_obj[:device_map].nil?
+    @device_maps = node_obj[:device_map].split(' ')
+  elsif !node_obj[:workorder][:rfcCi][:ciAttributes][:device_map].nil?
+    @device_maps = node_obj[:workorder][:rfcCi][:ciAttributes][:device_map].split(' ')
   end
 
   OOLog.info("App Name is: #{node_obj[:app_name]}")
   case node_obj[:app_name]
-    when /storage/
-      @device_maps.each do |dev|
-        @rg_name_persistent_storage = dev.split(':')[0]
-        @storage_account_name = dev.split(':')[1]
-        break
-      end
+  when /storage/
+    @device_maps.each do |dev|
+      @rg_name_persistent_storage = dev.split(':')[0]
+      @storage_account_name = dev.split(':')[1]
+      break
+    end
 
-      node_obj.workorder.payLoad[:DependsOn].each do |dep|
-        if dep['ciClassName'] =~ /Compute/
-          @instance_name = dep[:ciAttributes][:instance_name]
-        end
+    node_obj.workorder.payLoad[:DependsOn].each do |dep|
+      if dep['ciClassName'] =~ /Compute/
+        @instance_name = dep[:ciAttributes][:instance_name]
       end
-    when /volume/
-      node_obj.workorder.payLoad[:DependsOn].each do |dep|
-        if dep['ciClassName'] =~ /Storage/
-          OOLog.info('storage dependson found')
-          OOLog.info('storage not NIL')
-          @device_maps = dep[:ciAttributes]['device_map'].split(' ')
-          @device_maps.each do |dev|
-            @rg_name_persistent_storage = dev.split(':')[0]
-            @storage_account_name = dev.split(':')[1]
-            break
-          end
+    end
+  when /volume/
+    node_obj.workorder.payLoad[:DependsOn].each do |dep|
+      if dep['ciClassName'] =~ /Storage/
+        OOLog.info('storage dependson found')
+        OOLog.info('storage not NIL')
+        @device_maps = dep[:ciAttributes]['device_map'].split(' ')
+        @device_maps.each do |dev|
+          @rg_name_persistent_storage = dev.split(':')[0]
+          @storage_account_name = dev.split(':')[1]
           break
         end
+        break
       end
+    end
 
-      if node_obj['workorder']['payLoad'].has_key?('ManagedVia')
-        @instance_name = node_obj['workorder']['payLoad']['ManagedVia'][0]['ciAttributes']['instance_name']
-      end
-    when /compute/
-      @rg_name_persistent_storage = node_obj['platform-resource-group']
-      @storage_account_name = node_obj['storage_account']
-    else
-      # type code here
+    if node_obj[:workorder][:payLoad].key?('ManagedVia')
+      @instance_name = node_obj[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_name]
+    end
+  when /compute/
+    @rg_name_persistent_storage = node_obj['platform-resource-group']
+    @storage_account_name = node_obj[:storage_account]
+  else
+    # type code here
   end
 
   return base_manager.creds, @storage_account_name, @rg_name_persistent_storage, @instance_name, @device_maps
