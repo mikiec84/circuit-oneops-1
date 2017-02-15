@@ -4,22 +4,22 @@ require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/resource_group.rb', __FILE__)
 
 # set the proxy if it exists as a cloud var
-Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
+Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
 
 # get all necessary info from node
-cloud_name = node['workorder']['cloud']['ciName']
-compute_service = node['workorder']['services']['compute'][cloud_name]['ciAttributes']
+cloud_name = node[:workorder][:cloud][:ciName]
+compute_service = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
 credentials = {
-    tenant_id: compute_service['tenant_id'],
-    client_secret: compute_service['client_secret'],
-    client_id: compute_service['client_id'],
-    subscription_id: compute_service['subscription']
+  tenant_id: compute_service['tenant_id'],
+  client_secret: compute_service['client_secret'],
+  client_id: compute_service['client_id'],
+  subscription_id: compute_service['subscription']
 }
-ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
+ns_path_parts = node[:workorder][:rfcCi][:nsPath].split('/')
 org = ns_path_parts[1]
 assembly = ns_path_parts[2]
 environment = ns_path_parts[3]
-platform_ci_id = node['workorder']['box']['ciId']
+platform_ci_id = node[:workorder][:box][:ciId]
 location = compute_service[:location]
 
 network_security_group_name = node[:name]
@@ -29,7 +29,7 @@ resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, plat
 
 # Creating security rules objects
 nsg = AzureNetwork::NetworkSecurityGroup.new(credentials)
-rules = node['secgroup']['inbound'].tr('"[]\\', '').split(',')
+rules = node[:secgroup][:inbound].tr('"[]\\', '').split(',')
 sec_rules = []
 priority = 100
 reg_ex = /(\d+|\*|\d+-\d+)\s(\d+|\*|\d+-\d+)\s([A-Za-z]+|\*)\s\S+/
@@ -37,7 +37,7 @@ rules.each do |item|
   raise "#{item} is not a valid security rule" unless reg_ex.match(item)
   item2 = item.split(' ')
   security_rule_access = Fog::ARM::Network::Models::SecurityRuleAccess::Allow
-  security_rule_description = node['secgroup']['description']
+  security_rule_description = node[:secgroup][:description]
   security_rule_source_addres_prefix = item2[3]
   security_rule_destination_port_range = item2[1].to_s
   security_rule_direction = Fog::ARM::Network::Models::SecurityRuleDirection::Inbound
