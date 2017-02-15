@@ -23,10 +23,10 @@ module AzureDns
     end
 
     def update_dns_for_os(node)
-      public_ip_name = Utils.get_component_name('publicip', node['workorder']['payLoad']['DependsOn'][0]['ciId'])
+      public_ip_name = Utils.get_component_name('publicip', node[:workorder][:payLoad][:DependsOn][0][:ciId])
       pip = @pubip.get(@resource_group, public_ip_name)
       unless node['full_hostname'].nil?
-        full_hostname = node['full_hostname'].split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.').downcase
+        full_hostname = node[:full_hostname].split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.').downcase
         Chef::Log.info('domain name label :' + full_hostname)
         full_hostname = full_hostname.tr('.', '-')
         pip.domain_name_label = (full_hostname.length >= 61) ? full_hostname.slice!(0, 60) : full_hostname
@@ -41,9 +41,9 @@ module AzureDns
       # create a new dns settings object with the new values.
       # only setting the domain_name_label
       # the fqdn automatically gets populated with the name label and "<location>.cloudapp.azure.com"
-      if node['workorder']['rfcCi']['ciAttributes'].key?('aliases')
+      if node[:workorder][:rfcCi][:ciAttributes].key?('aliases')
         begin
-          shortnames = node['workorder']['rfcCi']['ciAttributes']['aliases'] == "" ? "" : JSON.parse(node['workorder']['rfcCi']['ciAttributes']['aliases'])
+          shortnames = node[:workorder][:rfcCi][:ciAttributes][:aliases] == '' ? '' : JSON.parse(node[:workorder][:rfcCi][:ciAttributes][:aliases])
         end
       end
       unless shortnames.empty?
@@ -56,7 +56,7 @@ module AzureDns
           Chef::Log.info('short name is empty. User didnt supply shortname ')
         end
       end
-      availability = node['workorder']['box']['ciAttributes']['availability']
+      availability = node[:workorder][:box][:ciAttributes][:availability]
       if availability == 'single'
         dependson = node[:workorder][:payLoad][:DependsOn]
         dependson.each do |depends|
@@ -87,17 +87,17 @@ module AzureDns
         end
       elsif availability == 'redundant'
         Chef::Log.info('environment:' + availability)
-        if node['workorder']['payLoad'].key?('lb')
-          lb_list = node['workorder']['payLoad']['lb']
+        if node[:workorder][:payLoad].key?('lb')
+          lb_list = node[:workorder][:payLoad][:lb]
           lb_list.each do |lb|
             ci_id = lb['ciId'] if lb.key?('ciId')
             public_ip_name = Utils.get_component_name('lb_publicip', ci_id)
             Chef::Log.info('lb_publicip name :' + public_ip_name)
-            if short_name_available == false
+            if !short_name_available
               Chef::Log.info('shortname is unavailable')
-              instance = node['workorder']['payLoad']['DependsOn'][0]['ciId'].to_s
-              cloud_id = node['workorder']['rfcCi']['ciName'].split('-', 2).last
-              subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
+              instance = node[:workorder][:payLoad][:DependsOn][0][:ciId].to_s
+              cloud_id = node[:workorder][:rfcCi][:ciName].split('-', 2).last
+              subdomain = node[:workorder][:payLoad][:Environment][0][:ciAttributes][:subdomain]
               new_dns_settings.domain_name_label = Utils.get_dns_domain_label('lb', cloud_id, instance, subdomain) + '-' + @zone_name
 
               if new_dns_settings.domain_name_label.length >= 61
@@ -125,9 +125,9 @@ module AzureDns
     end
 
     def update_dns_for_lb(node)
-      instance = node['workorder']['rfcCi']['ciId'].to_s
-      cloud_id = node['workorder']['rfcCi']['ciName'].split('-', 2).last
-      subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
+      instance = node[:workorder][:rfcCi][:ciId].to_s
+      cloud_id = node[:workorder][:rfcCi][:ciName].split('-', 2).last
+      subdomain = node[:workorder][:payLoad][:Environment][0][:ciAttributes][:subdomain]
       domain_name_label = Utils.get_dns_domain_label('lb', cloud_id, instance, subdomain) + '-' + @zone_name
       domain_name_label = domain_name_label.slice(0, 60) if domain_name_label.length >= 61
       Chef::Log.info('domain label is: ' + domain_name_label)

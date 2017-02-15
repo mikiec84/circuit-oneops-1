@@ -119,12 +119,12 @@ module AzureDns
         total_record_list = @recordset.get_existing_records_for_recordset(record_type.upcase, dns_name)
 
         case record_type
-          when 'a'
-            set_a_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
-          when 'cname'
-            set_cname_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
-          when 'ptr'
-            Chef::Log.info('Record Type is PTR. PTR records are not yet supported for Azure.')
+        when 'a'
+          set_a_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
+        when 'cname'
+          set_cname_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
+        when 'ptr'
+          Chef::Log.info('Record Type is PTR. PTR records are not yet supported for Azure.')
         end
       end
     end
@@ -162,7 +162,7 @@ module AzureDns
         node_ciAttributes = node_workorder_rfcci_json['ciAttributes']
 
         case type
-        when'aliases'
+        when 'aliases'
           node_attributes = node_ciBaseAttributes['aliases']
         when 'full_aliases'
           node_attributes = node_ciBaseAttributes['full_aliases']

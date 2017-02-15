@@ -5,7 +5,6 @@
 require 'fog/azurerm'
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
-
 module AzureDns
   require 'chef'
   require 'rest-client'
@@ -22,10 +21,10 @@ module AzureDns
 
     def initialize(platform_resource_group, dns_attributes)
       credentials = {
-          tenant_id: dns_attributes[:tenant_id],
-          client_secret: dns_attributes[:client_secret],
-          client_id: dns_attributes[:client_id],
-          subscription_id: dns_attributes[:subscription]
+        tenant_id: dns_attributes[:tenant_id],
+        client_secret: dns_attributes[:client_secret],
+        client_id: dns_attributes[:client_id],
+        subscription_id: dns_attributes[:subscription]
       }
       @dns_client = Fog::DNS::AzureRM.new(credentials)
       @zone = dns_attributes[:zone]

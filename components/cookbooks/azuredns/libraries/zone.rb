@@ -1,7 +1,6 @@
 require 'fog/azurerm'
 require 'chef'
 
-
 require ::File.expand_path('../../../azure/constants', __FILE__)
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
@@ -18,10 +17,10 @@ module AzureDns
 
     def initialize(dns_attributes, resource_group)
       credentials = {
-          tenant_id: dns_attributes[:tenant_id],
-          client_secret: dns_attributes[:client_secret],
-          client_id: dns_attributes[:client_id],
-          subscription_id: dns_attributes[:subscription]
+        tenant_id: dns_attributes[:tenant_id],
+        client_secret: dns_attributes[:client_secret],
+        client_id: dns_attributes[:client_id],
+        subscription_id: dns_attributes[:subscription]
       }
       @dns_client = Fog::DNS::AzureRM.new(credentials)
       @resource_group = resource_group
@@ -50,7 +49,7 @@ module AzureDns
       begin
         @dns_client.zones.create(resource_group: @resource_group, name: @zone_name, location: 'global')
       rescue MsRestAzure::AzureOperationError => e
-         OOLog.fatal("FATAL ERROR creating DNS Zone....: #{e.body}")
+        OOLog.fatal("FATAL ERROR creating DNS Zone....: #{e.body}")
       rescue => e
         OOLog.fatal("DNS Zone creation error....: #{e.message}")
       end
