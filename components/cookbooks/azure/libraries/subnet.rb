@@ -36,13 +36,13 @@ module AzureNetwork
 
         OOLog.info('checking for ip availability in ' + subnet.name)
         address_prefix = subnet.address_prefix
-        if express_route_enabled == 'true'
-          # Broadcast(1) + Gateway(1) + azure express routes(3) = 5
-          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 5
-        else
-          # Broadcast(1) + Gateway(1)
-          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 2
-        end
+        total_num_of_ips_possible = if express_route_enabled == 'true'
+                                      # Broadcast(1) + Gateway(1) + azure express routes(3) = 5
+                                      (2**(32 - address_prefix.split('/').last.to_i)) - 5
+                                    else
+                                      # Broadcast(1) + Gateway(1)
+                                      (2**(32 - address_prefix.split('/').last.to_i)) - 2
+                                    end
         OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible}")
 
         no_ips_inuse = subnet.ip_configurations_ids.nil? ? 0 : subnet.ip_configurations_ids.length

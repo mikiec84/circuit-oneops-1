@@ -11,7 +11,6 @@ module AzureNetwork
     attr_accessor :location, :network_client
     attr_reader :creds, :subspriction
 
-
     def initialize(creds)
       @network_client = Fog::Network::AzureRM.new(creds)
     end

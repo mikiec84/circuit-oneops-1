@@ -3,7 +3,6 @@ module AzureCompute
   # class that contains all methods to handle the Storage Profile needed for
   # creating a VM
   class OsProfile
-
     # build the OS Profile object needed to create a VM for Azure.
     def build_profile(initial_user, pub_key, server_name)
       linux_config = Azure::ARM::Compute::Models::LinuxConfiguration.new
@@ -26,18 +25,19 @@ module AzureCompute
 
       os_profile
     end
-    def windows_build_profile(initial_user, pub_key, server_name)
+
+    def windows_build_profile(initial_user, _pub_key, _server_name)
       win_config = Azure::ARM::Compute::Models::WindowsConfiguration.new
-      
+
       os_profile = Azure::ARM::Compute::Models::OSProfile.new
-      os_profile.computer_name = initial_user.gsub(/[^a-zA-Z]/,"").capitalize
-      os_profile.admin_password = os_profile.computer_name + "123@"
+      os_profile.computer_name = initial_user.gsub(/[^a-zA-Z]/, '').capitalize
+      os_profile.admin_password = os_profile.computer_name + '123@'
       OOLog.info("Computer Name is: #{os_profile.computer_name}")
       os_profile.admin_username = initial_user
-      OOLog.info("Initial User is: #{os_profile.admin_username}")      
+      OOLog.info("Initial User is: #{os_profile.admin_username}")
       os_profile.windows_configuration = win_config
 
-      return os_profile
+      os_profile
     end
   end
 end

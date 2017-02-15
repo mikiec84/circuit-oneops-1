@@ -14,10 +14,10 @@ end
 subscription_details = node[:workorder][:ci][:ciAttributes]
 
 cred_hash = {
-  'tenant_id': subscription_details['tenant_id'],
-  'client_id': subscription_details['client_id'],
-  'client_secret': subscription_details['client_secret'],
-  'subscription_id': subscription_details[:subscription]
+  tenant_id: subscription_details['tenant_id'],
+  client_id: subscription_details['client_id'],
+  client_secret: subscription_details['client_secret'],
+  subscription_id: subscription_details['subscription']
 }
 
 resource_group_name = subscription_details[:resource_group]
@@ -47,7 +47,7 @@ if express_route_enabled == 'true'
       OOLog.fatal("Error verifying the subscription and credentials for #{cred_hash[:subscription_id]}")
     end
   end
-elsif express_route_enabled == 'false' || express_route_enabled == nil
+elsif express_route_enabled == 'false' || express_route_enabled.nil?
   begin
     # First, get list if resources associated with subscription just to verify subscription and credentials
     response = client.resource_groups

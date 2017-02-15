@@ -2,8 +2,8 @@ require 'fog/azurerm'
 
 total_start_time = Time.now.to_i
 
-#set the proxy if it exists as a cloud var
-Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
+# set the proxy if it exists as a cloud var
+Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
 
 # get platform resource group and availability set
 include_recipe 'azure::get_platform_rg_and_as'
@@ -12,10 +12,10 @@ vm_manager = AzureCompute::VirtualMachineManager.new(node)
 compute_service = vm_manager.compute_service
 
 credentials = {
-    tenant_id: compute_service[:tenant_id],
-    client_secret: compute_service[:client_secret],
-    client_id: compute_service[:client_id],
-    subscription_id: compute_service[:subscription]
+  tenant_id: compute_service[:tenant_id],
+  client_secret: compute_service[:client_secret],
+  client_id: compute_service[:client_id],
+  subscription_id: compute_service[:subscription]
 }
 # must do this until all is refactored to use the util above.
 
@@ -42,11 +42,11 @@ ip_type = vm_manager.ip_type
 ci_id = vm_manager.compute_ci_id
 
 if ip_type == 'private'
-  puts "***RESULT:private_ip=#{node['ip']}"
-  puts "***RESULT:public_ip=#{node['ip']}"
-  puts "***RESULT:dns_record=#{node['ip']}"
+  puts "***RESULT:private_ip=#{node[:ip]}"
+  puts "***RESULT:public_ip=#{node[:ip]}"
+  puts "***RESULT:dns_record=#{node[:ip]}"
 else
-  puts "***RESULT:private_ip=#{node['ip']}"
+  puts "***RESULT:private_ip=#{node[:ip]}"
 end
 
 # for public deployments we need to get the public ip address after the vm
@@ -73,11 +73,11 @@ if ip_type == 'public'
   end
 end
 
-unless compute_service[:ostype].include?("windows")
-  include_recipe "compute::ssh_port_wait"
+unless compute_service[:ostype].include?('windows')
+  include_recipe 'compute::ssh_port_wait'
 end
 
-owner = node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['owner'] || 'na'
+owner = node[:workorder][:payLoad][:Assembly][0][:ciAttributes][:owner] || 'na'
 node.set['max_retry_count_add'] = 30
 
 mgmt_url = "https://#{node['mgmt_domain']}"

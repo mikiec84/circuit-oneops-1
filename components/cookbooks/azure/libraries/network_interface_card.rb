@@ -72,7 +72,6 @@ module AzureNetwork
 
     # create or update the NIC
     def create_update(network_interface)
-
       OOLog.info("Updating NIC '#{network_interface.name}' ")
       start_time = Time.now.to_i
       begin

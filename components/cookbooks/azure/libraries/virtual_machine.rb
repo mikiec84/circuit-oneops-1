@@ -2,7 +2,6 @@ require 'fog/azurerm'
 
 module AzureCompute
   class VirtualMachine
-
     attr_reader :compute_service
 
     def initialize(credentials)

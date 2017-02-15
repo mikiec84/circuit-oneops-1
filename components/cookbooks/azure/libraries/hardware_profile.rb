@@ -2,7 +2,6 @@
 # Nothing much happening here, just setting the vm size on the hardware profile for now.
 module AzureCompute
   class HardwareProfile
-
     def build_profile(vm_size)
       # vm_size is required for the overall creation of the VM, so we will check here and make sure we throw an exception
       # that it isn't present.
@@ -12,6 +11,5 @@ module AzureCompute
       hardware_profile.vm_size = vm_size
       hardware_profile
     end
-
   end
 end

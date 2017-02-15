@@ -3,7 +3,6 @@ require 'chef'
 
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
-
 # module to contain classes for dealing with the Azure Network features.
 module AzureNetwork
   # Class that defines the functions for manipulating virtual networks in Azure
@@ -142,11 +141,13 @@ module AzureNetwork
         OOLog.info('checking for ip availability in ' + subnet.name)
         address_prefix = subnet.address_prefix
 
-        if express_route_enabled
-          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 5 # Broadcast(1)+Gateway(1)+azure express routes(3) = 5
-        else
-          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 2 # Broadcast(1)+Gateway(1)
-        end
+        total_num_of_ips_possible = if express_route_enabled
+                                      # Broadcast(1)+Gateway(1)+azure express routes(3) = 5
+                                      (2**(32 - address_prefix.split('/').last.to_i)) - 5
+                                    else
+                                      # Broadcast(1)+Gateway(1)
+                                      (2**(32 - address_prefix.split('/').last.to_i)) - 2
+                                    end
         OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible}")
 
         no_ips_inuse = subnet.ip_configurations_ids.nil? ? 0 : subnet.ip_configurations_ids.length
@@ -192,9 +193,7 @@ module AzureNetwork
       array_of_subnet_objs.each do |subnet|
         hash = {}
         subnet.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = subnet.instance_variable_get(attr) }
-        unless hash['attributes'].nil?
-          subnets_array << hash['attributes']
-        end
+        subnets_array << hash['attributes'] unless hash['attributes'].nil?
       end
       subnets_array
     end

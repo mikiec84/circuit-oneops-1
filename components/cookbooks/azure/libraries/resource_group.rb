@@ -26,8 +26,7 @@ module AzureResources
         resource_group.location = location
 
         start_time = Time.now.to_i
-        @client.resource_groups.create_or_update(rg_name,
-                                                   resource_group)
+        @client.resource_groups.create_or_update(rg_name, resource_group)
         end_time = Time.now.to_i
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error creating resource group: #{e.body}")
@@ -73,21 +72,20 @@ module AzureResources
     # accross the whole subscription, we want to be able to provision and
     # de-provision platforms in the same assembly / env / location without
     # destroying all of them together.
-    def self.get_name(org,assembly,platform_ci_id,environment,location)
+    def self.get_name(org, assembly, platform_ci_id, environment, location)
       OOLog.info("Resource Group org: #{org}")
       OOLog.info("Resource Group assembly: #{assembly}")
       OOLog.info("Resource Group Platform ci ID: #{platform_ci_id}")
       OOLog.info("Resource Group Environment: #{environment}")
       OOLog.info("Resource Group location: #{location}")
       resource_group_name = org[0..15] + '-' +
-        assembly[0..15] + '-' +
-        platform_ci_id.to_s + '-' +
-        environment[0..15] + '-' +
-        Utils.abbreviate_location(location)
+                            assembly[0..15] + '-' +
+                            platform_ci_id.to_s + '-' +
+                            environment[0..15] + '-' +
+                            Utils.abbreviate_location(location)
       OOLog.info("Resource Group Name is: #{resource_group_name}")
       OOLog.info("Resource Group Name Length: #{resource_group_name.length}")
       resource_group_name
     end
-
   end
 end
