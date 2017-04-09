@@ -43,36 +43,37 @@ module AzureNetwork
     # ips
     def get_subnet_with_available_ips(subnets, express_route_enabled)
       subnets.each_index do |i|
-        if subnets[i].name.downcase == "gatewaysubnet"
+        subnet = subnets[i]
+        if subnet.name.downcase == "gatewaysubnet"
           subnets.delete_at(i)
           redo if subnets.size > i
           next
         end
 
         OOLog.info('checking for ip availability in ' + subnets[i].name)
-        address_prefix = subnets[i].properties.address_prefix
+        address_prefix = subnet.properties.address_prefix
 
         if express_route_enabled == 'true'
           #Broadcast(1)+Gateway(1)+azure express routes(3) = 5
           total_num_of_ips_possible =
-              (2 ** (32 - (address_prefix.split('/').last.to_i)))-5
+            (2 ** (32 - (address_prefix.split('/').last.to_i)))-5
         else
           #Broadcast(1)+Gateway(1)
           total_num_of_ips_possible =
-              (2 ** (32 - (address_prefix.split('/').last.to_i)))-2
+            (2 ** (32 - (address_prefix.split('/').last.to_i)))-2
         end
         OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible.to_s}")
 
-        if subnets[i].properties.ip_configurations.nil?
+        if subnet.properties.ip_configurations.nil?
           no_ips_inuse = 0
         else
-          no_ips_inuse = subnets[i].properties.ip_configurations.length
+          no_ips_inuse = subnet.properties.ip_configurations.length
         end
         OOLog.info("Num of ips in use: #{no_ips_inuse.to_s}")
 
         remaining_ips = total_num_of_ips_possible - (no_ips_inuse)
         if remaining_ips == 0
-          OOLog.info("No IP address remaining in the Subnet '#{subnets[i].name}'")
+          OOLog.info("No IP address remaining in the Subnet '#{subnet.name}'")
           OOLog.info("Total number of subnets(subnet_name_list.count) = #{(subnets.count).to_s}")
           OOLog.info('checking the next subnet')
           next #check the next subnet
