@@ -72,7 +72,7 @@ module AzureNetwork
 
         remaining_ips = total_num_of_ips_possible - (no_ips_inuse)
         if remaining_ips == 0
-          OOLog.info("No IP address remaining in the subnets[i] '#{subnets[i].name}'")
+          OOLog.info("No IP address remaining in the Subnet '#{subnets[i].name}'")
           OOLog.info("Total number of subnets(subnet_name_list.count) = #{(subnets.count).to_s}")
           OOLog.info('checking the next subnet')
           next #check the next subnet
