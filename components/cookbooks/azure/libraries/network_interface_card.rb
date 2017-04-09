@@ -171,7 +171,7 @@ module AzureNetwork
         nic = create_update(network_interface)
       rescue MsRestAzure::AzureOperationError => e
         if e.body.to_s.include? "\"code\"=>\"SubnetIsFull\""
-          unless subnetlist.nil?
+          unless subnetlist.empty?
             retry
           end
         end
