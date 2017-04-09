@@ -50,7 +50,7 @@ module AzureNetwork
           next
         end
 
-        OOLog.info('checking for ip availability in ' + subnets[i].name)
+        OOLog.info('checking for ip availability in ' + subnet.name)
         address_prefix = subnet.properties.address_prefix
 
         if express_route_enabled == 'true'
