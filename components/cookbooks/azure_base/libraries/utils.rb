@@ -196,8 +196,23 @@ module Utils
   end
 
   def get_resource_tags(node)
-    owner = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || "Unknown"
-    return {'OwnerName' => owner}
+    tags = {}
+    tags['ApplicationName'] = node.workorder.payLoad.Assembly[0].ciName || 'Unknown'
+    tags['OwnerName'] = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || 'Unknown'
+    tags['OwnerTeam'] = node.workorder.payLoad.Organization[0].ciName || 'Unknown'
+    tags['NotificationDistList'] = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || 'Unknown'
+    tags['Environment'] = node.workorder.payLoad.Environment[0].ciName || 'Unknown'
+    tags['DeploymentType'] = 'OneOps'
+    tags['Platform'] = node.workorder.box.ciName || 'Unknown'
+
+    # tags['CostCenter'] =  'Unknown'
+
+    if node.workorder.payLoad.Organization[0].ciAttributes.has_key?('full_name')
+      tags['E2EDomain'] = node.workorder.payLoad.Organization[0].ciAttributes["full_name"].split('.').last.strip
+    end
+
+    # owner = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || "Unknown"
+    return tags
   end
 
   def update_resource_tags(creds, subscription_id, resource_group_name, resource, tags)
@@ -224,7 +239,10 @@ module Utils
                                      resource_type, resource.name, api_version).value!).body
 
     # Add the tags to the resource
-    resource.tags = tags
+    tags.each do |key, value|
+      resource.tags[key] = value
+    end
+
 
     # Update the resource via ResourceManagementClient
     resource = (client.resources.create_or_update(resource_group_name, resource_provider, resource_parent,
